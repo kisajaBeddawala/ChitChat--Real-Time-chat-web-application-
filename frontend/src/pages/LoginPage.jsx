@@ -19,8 +19,7 @@ const LoginPage = () => {
       setIsDataSubmitted(true);
       return;
     }
-
-    login(currState === "Sign up" ? 'signup' : 'login', {fullName, email, password, bio});
+    login(currState === "Sign Up" ? 'signup' : 'login', {fullName, email, password, bio});
   }
 
   return (

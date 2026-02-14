@@ -25,7 +25,7 @@ export const ChatProvider = ({children}) => {
         }
     }
 
-    const _getMessages = async (userId) => {
+    const getMessages = async (userId) => {
         try{
             const {data} = await axios.get(`api/messages/${userId}`);
             if(data.success){
@@ -82,7 +82,7 @@ export const ChatProvider = ({children}) => {
         users,
         selectedUser,
         getUsers,
-        setMessages,
+        getMessages,
         sendMessage,
         setSelectedUser,
         unseenMessages,
