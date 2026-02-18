@@ -7,7 +7,20 @@ import {Toaster} from 'react-hot-toast';
 import { AuthContext } from '../context/AuthContext'
 
 const App = () => {
-  const {authUser} = useContext(AuthContext)
+  const {authUser, isLoading} = useContext(AuthContext)
+  
+  // Show loading screen while checking authentication
+  if (isLoading) {
+    return (
+      <div className="bg-[url('/bgImage.svg')] bg-contain h-screen flex items-center justify-center">
+        <div className="text-white text-center">
+          <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-[url('/bgImage.svg')] bg-contain">
       <Toaster/>

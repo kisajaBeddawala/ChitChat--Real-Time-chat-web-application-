@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react'
+import React, { useContext, useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AuthContext } from '../../context/AuthContext'
 import { ChatContext } from '../../context/ChatContext'
@@ -9,15 +9,24 @@ const Sidebar = () => {
 
     const {logout, onlineUsers} = useContext(AuthContext)
 
-    const [input,setInput] = useState(false);
+    const [input, setInput] = useState("");
 
     const navigate = useNavigate();
 
-    const fillterdUsers = input ? users.filter((user) => user.fullName.toLowerCase().includes(input.toLowerCase())) : users;
+    // Memoize filtered users for better performance
+    const filteredUsers = useMemo(() => {
+        if (!input.trim()) return users || [];
+        return (users || []).filter((user) => 
+            user.fullName.toLowerCase().includes(input.toLowerCase())
+        );
+    }, [users, input]);
 
+    // Only call getUsers once on mount and when explicitly needed
     useEffect(() => {
-        getUsers();
-    }, [onlineUsers, getUsers])
+        if (users.length === 0) {
+            getUsers();
+        }
+    }, []); // Remove onlineUsers dependency to prevent excessive calls
 
   return (
     <div className={`bg-[#8185B2]/10 h-full p-5 rounded-r-xl overflow-y-scroll
@@ -42,13 +51,13 @@ const Sidebar = () => {
         </div>
 
         <div className='flex flex-col'>
-            {fillterdUsers.map((user,index) => (
+            {filteredUsers.map((user,index) => (
                 <div onClick={() => {setSelectedUser(user),setUnseenMessages(prev => ({...prev, [user._id]: 0}))}} key={index} className={`relative flex items-center gap-2 p-2 pl-4 rounded cursor-pointer max-sm:text-sm ${selectedUser?._id === user._id && 'bg-[#282142]/10'}`}>
                     <img src={user.profilePic || assets.avatar_icon} alt="" className='w-8.75 aspect-square rounded-full'/>
                     <div className='flex flex-col leading-5'>
                         <p>{user.fullName}</p>
                         {
-                            onlineUsers.includes(user._id)
+                            (onlineUsers || []).includes(user._id)
                             ? <span className='text-green-400 text-xs'>Online</span>
                             : <span className='text-neutral-400 text-xs'>Offline</span>
                         }

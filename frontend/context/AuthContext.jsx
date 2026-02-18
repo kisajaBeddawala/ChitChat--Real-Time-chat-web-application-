@@ -1,5 +1,5 @@
 import { createContext, useEffect, useState, useCallback, useRef } from "react";
-import axios from "axios";
+import axios from "../src/lib/axios";
 import toast from "react-hot-toast";
 import {io} from "socket.io-client"
 
@@ -13,8 +13,9 @@ export const AuthProvider = ({children}) => {
 
     const [token, setToken] = useState(localStorage.getItem("token"));
     const [authUser, setAuthUser] = useState(null);
-    const [onlineUser, setOnlineUser] = useState([]);
+    const [onlineUsers, setOnlineUsers] = useState([]);
     const [socket, setSocket] = useState(null);
+    const [isLoading, setIsLoading] = useState(true); // Add loading state
     const hasCheckedAuth = useRef(false);
 
     const connectSocket = useCallback((userData)=>{
@@ -26,7 +27,7 @@ export const AuthProvider = ({children}) => {
         setSocket(newSocket);
 
         newSocket.on("getOnlineUsers", (users) => {
-            setOnlineUser(users);
+            setOnlineUsers(users);
         });
     }, [socket]);
 
@@ -38,11 +39,15 @@ export const AuthProvider = ({children}) => {
                 connectSocket(data.user);
             }
         }catch(error){
-            toast.error(error.message);
+            console.log("Auth check failed:", error.message);
+            // Don't show error toast on auth failure
+        } finally {
+            setIsLoading(false); // Always set loading to false
         }
     }, [connectSocket]);
 
     const login = async(state,credentials) => {
+        setIsLoading(true); // Set loading when login starts
         try{
             const {data} = await axios.post(`api/auth/${state}`, credentials);
             if(data.success){
@@ -56,6 +61,8 @@ export const AuthProvider = ({children}) => {
             }
         }catch(error){
             toast.error(error.message);
+        } finally {
+            setIsLoading(false); // Always clear loading
         }
     }
 
@@ -63,10 +70,11 @@ export const AuthProvider = ({children}) => {
         localStorage.removeItem("token");
         setAuthUser(null);
         setToken(null);
-        setOnlineUser([]);
-        axios.defaults.headers.common["token"] = null;
+        setOnlineUsers([]);
         toast.success("Logged out successfully");
-        socket.disconnect();
+        if (socket) {
+            socket.disconnect();
+        }
     }
 
     const updateProfile = async (body) => {
@@ -82,24 +90,23 @@ export const AuthProvider = ({children}) => {
     }
     
     useEffect(()=>{
+        // Always check auth on mount if token exists
         if(token){
-            axios.defaults.headers.common["token"] = token;
             if(!hasCheckedAuth.current){
                 hasCheckedAuth.current = true;
-                // Defer checkAuth to avoid cascading render warning
-                const timer = setTimeout(() => {
-                    checkAuth();
-                }, 0);
-                return () => clearTimeout(timer);
+                checkAuth();
             }
+        } else {
+            setIsLoading(false);
         }
     }, [token, checkAuth])
     
     const value = {
-        axios,
+        token,
         authUser,
-        onlineUser,
+        onlineUsers,
         socket,
+        isLoading, // Add loading state to context
         login,
         logout,
         updateProfile,

@@ -1,6 +1,7 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { AuthContext } from "./AuthContext";
 import toast from "react-hot-toast";
+import axios from "../src/lib/axios";
 
 export const ChatContext = createContext();
 
@@ -11,9 +12,9 @@ export const ChatProvider = ({children}) => {
     const [selectedUser, setSelectedUser] = useState(null);
     const [unseenMessages, setUnseenMessages] = useState({});
 
-    const {socket,axios} = useContext(AuthContext); 
+    const {socket} = useContext(AuthContext); 
 
-    const getUsers = async () => {
+    const getUsers = useCallback(async () => {
         try{
             const {data} = await axios.get("api/messages/users");
             if(data.success){
@@ -23,9 +24,9 @@ export const ChatProvider = ({children}) => {
         }catch(error){
             toast.error(error.message);
         }
-    }
+    }, []); // Remove unnecessary dependencies
 
-    const getMessages = async (userId) => {
+    const getMessages = useCallback(async (userId) => {
         try{
             const {data} = await axios.get(`api/messages/${userId}`);
             if(data.success){
@@ -34,9 +35,9 @@ export const ChatProvider = ({children}) => {
         }catch(error){
             toast.error(error.message);
         }
-    }
+    }, []);
 
-    const sendMessage = async (messageData) => {
+    const sendMessage = useCallback(async (messageData) => {
         try{
             const {data} = await axios.post(`api/messages/send/${selectedUser._id}`, messageData);
             if(data.success){
@@ -47,35 +48,29 @@ export const ChatProvider = ({children}) => {
         }catch(error){
             toast.error(error.message);
         }
-    }
+    }, [selectedUser]);
 
+    // Optimize socket listeners - only recreate when socket changes
     useEffect(() => {
-        const subscribeToMessages = () => {
-            if(!socket) return;
-            socket.on("newMessage", (newMessage) => {
-                if(selectedUser && newMessage.senderId === selectedUser._id){
-                    newMessage.seen = true;
-                    setMessages((prev) => [...prev, newMessage]);
-                    axios.put(`api/messages/mark/${newMessage._id}`);
-                }else{
-                    setUnseenMessages((prev) => ({
-                        ...prev, [newMessage.senderId]: 
-                        prev[newMessage.senderId] ? 
-                        prev[newMessage.senderId] + 1 : 1
-                    }))
-                }
-            })
+        if(!socket) return;
+
+        const handleNewMessage = (newMessage) => {
+            if(selectedUser && newMessage.senderId === selectedUser._id){
+                newMessage.seen = true;
+                setMessages((prev) => [...prev, newMessage]);
+                axios.put(`api/messages/mark/${newMessage._id}`);
+            }else{
+                setUnseenMessages((prev) => ({
+                    ...prev, [newMessage.senderId]: 
+                    prev[newMessage.senderId] ? 
+                    prev[newMessage.senderId] + 1 : 1
+                }))
+            }
         }
 
-        const unsubscribeFromMessages = () => {
-            if(socket) socket.off("newMessage");
-        }
-
-        subscribeToMessages();
-        return () => {
-            unsubscribeFromMessages();
-        }
-    }, [socket, selectedUser, axios, setMessages, setUnseenMessages])
+        socket.on("newMessage", handleNewMessage);
+        return () => socket.off("newMessage", handleNewMessage);
+    }, [socket, selectedUser]);
 
     const value = {
         messages,

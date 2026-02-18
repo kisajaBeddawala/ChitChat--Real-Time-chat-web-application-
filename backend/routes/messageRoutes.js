@@ -1,12 +1,18 @@
 import express from 'express';
 import { protectRoute } from '../middleware/auth.js';
-import { getMessages, getUsersForSidebar, markMessageAsSeen, sendMessage } from '../controllers/messageController.js';
+import { getMessages, getUsersForSidebar, markMessageAsSeen, sendMessage, sendGroupMessage, getGroupMessages } from '../controllers/messageController.js';
 
 
 const messageRouter = express.Router();
 
+// Direct message routes
 messageRouter.get("/users",protectRoute, getUsersForSidebar);
 messageRouter.get("/:id",protectRoute, getMessages);
 messageRouter.put("/mark/:id", protectRoute, markMessageAsSeen);
-messageRouter.post("/send/:id", protectRoute,sendMessage )
+messageRouter.post("/send/:id", protectRoute,sendMessage );
+
+// Group message routes
+messageRouter.post("/group/send/:id", protectRoute, sendGroupMessage);
+messageRouter.get("/group/:id", protectRoute, getGroupMessages);
+
 export default messageRouter;

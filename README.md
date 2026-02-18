@@ -7,22 +7,32 @@ This project is built to understand how real-time communication works on the web
 
 
 ## Features
-- user authentication (sign up, log in, log out)
-- secure authentication using JWT (JSON Web Tokens)
-- real-time messaging using WebSockets
-- online/offline user handling
+- User authentication (sign up, log in, log out)
+- Secure authentication using JWT (JSON Web Tokens)
+- Real-time messaging using Socket.io
+- Online/offline user status tracking
+- Profile picture upload with Cloudinary
+- User profile management
 
 
 ## Tech Stack
 
 ### Frontend
-- React.js
-- Tailwind CSS
+- React.js (v19.2.0)
+- Tailwind CSS (v4.1.18)
+- Vite (build tool)
+- React Router DOM (routing)
+- Axios (HTTP client)
+- React Hot Toast (notifications)
+- Socket.io Client
 
 ### Backend
 - Node.js
-- Express.js
-- Socket.io (WebSocket)
+- Express.js (v5.2.1)
+- Socket.io (v4.8.3)
+- MongoDB with Mongoose
+- Cloudinary (image upload)
+- bcrypt (password hashing)
 
 ### Database
 - MongoDB
@@ -31,6 +41,7 @@ This project is built to understand how real-time communication works on the web
 - Git & GitHub
 - Postman (API testing)
 - VSCode (Code editor)
+- Vercel (deployment)
 
 
 ## Installation and Setup Instructions
@@ -66,80 +77,107 @@ This project is built to understand how real-time communication works on the web
     MONGO_URI=your_mongodb_connection_string
     JWT_SECRET=your_jwt_secret_key
     PORT=5000
+    CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+    CLOUDINARY_API_KEY=your_cloudinary_api_key
+    CLOUDINARY_API_SECRET=your_cloudinary_api_secret
     ```
 
 5. **Start the backend server**
     ```bash
     cd backend
-    npm start
+    npm run dev
     ```
 
 6. **Start the frontend development server**
     ```bash
     cd frontend
-    npm start
+    npm run dev
     ```
 
 7. **Access the application**
     
-    Open your browser and navigate to `http://localhost:3000`
+    Open your browser and navigate to `http://localhost:5173` (Vite default port)
 
 
 ## Project Structure
 ```
-chitchat/
+ChitChat web application/
 ├── backend/
-│   ├── config/
 │   ├── controllers/
-│   ├── models/
-│   ├── routes/
+│   │   ├── messageController.js
+│   │   └── userController.js
+│   ├── lib/
+│   │   ├── cloudinary.js
+│   │   ├── db.js
+│   │   └── utils.js
 │   ├── middleware/
-│   ├── socket/
-│   ├── .env.example
-│   ├── .gitignore
+│   │   └── auth.js
+│   ├── models/
+│   │   ├── Message.js
+│   │   └── User.js
+│   ├── routes/
+│   │   ├── messageRoutes.js
+│   │   └── userRoutes.js
+│   ├── package.json
 │   ├── server.js
-│   └── package.json
+│   └── vercel.json
 ├── frontend/
 │   ├── public/
 │   ├── src/
+│   │   ├── assets/
+│   │   │   └── assets.js
 │   │   ├── components/
-│   │   ├── pages/
+│   │   │   ├── ChatContainer.jsx
+│   │   │   ├── RightSidebar.jsx
+│   │   │   └── Sidebar.jsx
 │   │   ├── context/
-│   │   ├── utils/
-│   │   ├── App.js
-│   │   └── index.js
-│   └── package.json
+│   │   │   ├── AuthContext.jsx
+│   │   │   └── ChatContext.jsx
+│   │   ├── lib/
+│   │   │   └── utils.js
+│   │   ├── pages/
+│   │   │   ├── HomePage.jsx
+│   │   │   ├── LoginPage.jsx
+│   │   │   └── ProfilePage.jsx
+│   │   ├── App.jsx
+│   │   ├── index.css
+│   │   └── main.jsx
+│   ├── eslint.config.js
+│   ├── index.html
+│   ├── package.json
+│   ├── vercel.json
+│   └── vite.config.js
 └── README.md
 ```
 
 
 ## API Endpoints
 
-### Authentication
-- `POST /api/auth/signup` - Register a new user
-- `POST /api/auth/login` - Login user
-- `POST /api/auth/logout` - Logout user
-
-### Users
-- `GET /api/users` - Get all users
-- `GET /api/users/:id` - Get user by ID
+### Authentication & Users
+- `POST /api/users/signup` - Register a new user
+- `POST /api/users/login` - Login user
+- `PUT /api/users/update-profile` - Update user profile (requires authentication)
+- `GET /api/users/check` - Check authentication status
 
 ### Messages
 - `GET /api/messages/:userId` - Get messages between current user and specified user
 - `POST /api/messages/send/:userId` - Send a message to specified user
 
 
-## WebSocket Events
+## Socket.io Events
 
 ### Client to Server
-- `connection` - User connects to the server
+- `connection` - User connects to the server (with userId in query)
 - `disconnect` - User disconnects from the server
-- `sendMessage` - Send a message to another user
 
 ### Server to Client
-- `newMessage` - Receive a new message
-- `userOnline` - Notification when a user comes online
-- `userOffline` - Notification when a user goes offline
+- `getOnlineUsers` - Receive list of currently online users
+- `newMessage` - Receive a new message in real-time
+
+### Real-time Features
+- Online/offline user status tracking
+- Instant message delivery
+- Live user presence indicators
 
 ## Contact
 - **Developer**: Kisaja Beddawala
