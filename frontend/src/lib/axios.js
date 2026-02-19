@@ -22,9 +22,12 @@ axios.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Token expired or invalid
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+      // Only redirect on specific 401 errors, not all
+      const errorMessage = error.response?.data?.message;
+      if (errorMessage === 'Token expired' || errorMessage === 'Invalid token' || !localStorage.getItem('token')) {
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

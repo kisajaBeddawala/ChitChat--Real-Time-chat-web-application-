@@ -24,7 +24,8 @@ export const getUsersForSidebar = async(req,res) => {
                                     $and: [
                                         { $eq: ['$senderId', '$$senderId'] },
                                         { $eq: ['$receiverId', userId] },
-                                        { $eq: ['$seen', false] }
+                                        { $eq: ['$seen', false] },
+                                        { $eq: ['$groupId', null] } // Only individual messages
                                     ]
                                 }
                             }
@@ -70,9 +71,14 @@ export const getMessages = async (req,res) => {
         const {id:selectedUserId} = req.params;
         const myId = req.user._id;
         const messages = await Message.find({
-            $or:[
-                {senderId: selectedUserId, receiverId: myId},
-                {senderId: myId, receiverId: selectedUserId},
+            $and: [
+                { groupId: null }, // Only individual messages, not group messages
+                {
+                    $or:[
+                        {senderId: selectedUserId, receiverId: myId},
+                        {senderId: myId, receiverId: selectedUserId},
+                    ]
+                }
             ]
         })
         await Message.updateMany({senderId:selectedUserId, receiverId:myId},{seen:true});
@@ -88,7 +94,18 @@ export const getMessages = async (req,res) => {
 export const markMessageAsSeen = async (req,res) => {
     try{
         const {id} = req.params;
-        await Message.findByIdAndUpdate(id, {seen:true});
+        const userId = req.user._id;
+        
+        // Only allow marking individual messages as seen (not group messages)
+        // and only if the user is the receiver
+        await Message.findOneAndUpdate(
+            { 
+                _id: id, 
+                receiverId: userId, 
+                groupId: null 
+            }, 
+            { seen: true }
+        );
         res.json({success:true})
     }catch(error){
         console.log(error.message);

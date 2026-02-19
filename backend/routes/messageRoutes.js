@@ -12,7 +12,7 @@ messageRouter.put("/mark/:id", protectRoute, markMessageAsSeen);
 messageRouter.post("/send/:id", protectRoute,sendMessage );
 
 // Group message routes
-messageRouter.post("/group/send/:id", protectRoute, sendGroupMessage);
+messageRouter.post("/send/group/:id", protectRoute, sendGroupMessage);
 messageRouter.get("/group/:id", protectRoute, getGroupMessages);
 
 export default messageRouter;

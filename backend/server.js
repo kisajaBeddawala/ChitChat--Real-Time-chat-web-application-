@@ -69,7 +69,11 @@ async function joinUserGroups(socket, userId) {
 
 app.use(express.json({limit:'4mb'}))
 app.use(cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    origin: [
+        process.env.FRONTEND_URL || "http://localhost:5173",
+        "http://10.10.1.60:5173", // Network access
+        "http://localhost:5173", // Local access
+    ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization', 'token']
@@ -87,7 +91,7 @@ const PORT = process.env.PORT || 5000
 
 // For local development
 if (process.env.NODE_ENV !== "production") {
-    server.listen(PORT, () => console.log("Server is running on PORT : " + PORT))
+    server.listen(PORT, '0.0.0.0', () => console.log(`Server is running on http://0.0.0.0:${PORT} (Network: http://10.10.1.60:${PORT})`));
 }
 
 // Export for Vercel serverless

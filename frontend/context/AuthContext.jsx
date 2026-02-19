@@ -36,6 +36,7 @@ export const AuthProvider = ({children}) => {
             const { data } = await axios.get("api/auth/check");
             if(data.success){
                 setAuthUser(data.user);
+                localStorage.setItem("userId", data.user._id); // Store user ID
                 connectSocket(data.user);
             }
         }catch(error){
@@ -55,12 +56,13 @@ export const AuthProvider = ({children}) => {
                 connectSocket(data.user);
                 setToken(data.token);
                 localStorage.setItem("token", data.token);
+                localStorage.setItem("userId", data.user._id); // Store user ID for easy access
                 toast.success(data.message);
             }else{
                 toast.error(data.message);
             }
         }catch(error){
-            toast.error(error.message);
+            toast.error(error.response?.data?.message || error.message);
         } finally {
             setIsLoading(false); // Always clear loading
         }
@@ -68,6 +70,7 @@ export const AuthProvider = ({children}) => {
 
     const logout = () => {
         localStorage.removeItem("token");
+        localStorage.removeItem("userId");
         setAuthUser(null);
         setToken(null);
         setOnlineUsers([]);
@@ -83,9 +86,15 @@ export const AuthProvider = ({children}) => {
             if(data.success){
                 setAuthUser(data.user);
                 toast.success("Profile updated successfully");
+                return data.user;
+            } else {
+                toast.error(data.message || "Failed to update profile");
+                return null;
             }
         }catch(error){
-            toast.error(error.message);
+            console.error("Profile update error:", error);
+            toast.error(error.response?.data?.message || error.message || "Failed to update profile");
+            return null;
         }
     }
     

@@ -26,9 +26,12 @@ export const signup = async (req,res) => {
             fullName,email,password:hashedPassword,bio
         });
 
-        const token = generateToken(newUser._id)
+        const token = generateToken(newUser._id);
+        
+        // Remove password from response
+        const userWithoutPassword = await User.findById(newUser._id).select('-password');
 
-        res.json({success:true, userData: newUser, token , message:"Account created successfully"});
+        res.json({success:true, user: userWithoutPassword, token , message:"Account created successfully"});
     }catch(error){
         console.log(error.message);
         return res.json({success:false, message:error.message})
@@ -39,17 +42,24 @@ export const signup = async (req,res) => {
 export const login = async (req,res) => {
     try{
        const {email,password} = req.body;
-       const userData = await User.findOne({email})
+       const userData = await User.findOne({email}).select('+password');
+
+       if (!userData) {
+        return res.json({success:false, message:"Invalid credentials"});
+       }
 
        const isPasswordCorrect = await bcrypt.compare(password, userData.password);
 
        if (!isPasswordCorrect){
-        return res.json({success:false, message:"invalid credentials"});
+        return res.json({success:false, message:"Invalid credentials"});
        }
 
-       const token = generateToken(userData._id)
+       const token = generateToken(userData._id);
+       
+       // Remove password from response
+       const userWithoutPassword = await User.findById(userData._id).select('-password');
 
-        res.json({success:true, userData, token , message:"Login successful"});
+        res.json({success:true, user: userWithoutPassword, token , message:"Login successful"});
     }catch(error){
         console.log(error.message);
         return res.json({success:false, message:error.message})
@@ -67,16 +77,16 @@ export const updateProfile = async (req,res) => {
         const { profilePic, bio, fullName } = req.body;
 
         const userId = req.user._id;
-        let updateUser;
+        let updateData = { bio, fullName };
 
-        if(!profilePic){
-            await User.findByIdAndUpdate(userId, {bio, fullName}, {new:true})
-        }else{
+        if(profilePic){
             const upload = await cloudinary.uploader.upload(profilePic);
-
-            updateUser = await User.findByIdAndUpdate(userId,{profilePic:upload.secure_url, bio, fullName},{new:true});
+            updateData.profilePic = upload.secure_url;
         }
-        res.json({success:true, user:updateUser})
+
+        const updatedUser = await User.findByIdAndUpdate(userId, updateData, {new:true}).select('-password');
+        
+        res.json({success:true, user:updatedUser})
     }catch(error){
         console.log(error.message)
         res.json({success:false, message:error.message})

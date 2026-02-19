@@ -20,9 +20,15 @@ export const ChatProvider = ({children}) => {
             if(data.success){
                 setUsers(data.users);
                 setUnseenMessages(data.unseenMessages);
+            } else {
+                console.error("Failed to get users:", data.message);
             }
         }catch(error){
-            toast.error(error.message);
+            console.error("Get users error:", error);
+            // Only show toast for non-auth errors
+            if (error.response?.status !== 401) {
+                toast.error(error.response?.data?.message || "Failed to load users");
+            }
         }
     }, []); // Remove unnecessary dependencies
 
