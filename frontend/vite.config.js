@@ -8,5 +8,6 @@ export default defineConfig({
   server: {
     host: '0.0.0.0', // Listen on all network interfaces
     port: 5173,
+    // https: true, // Disabled for development - use HTTP instead
   },
 })

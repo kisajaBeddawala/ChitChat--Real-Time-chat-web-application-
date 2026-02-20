@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { AuthContext } from '../../context/AuthContext'
 import { ChatContext } from '../../context/ChatContext'
 import { GroupContext } from '../../context/GroupContext'
+import { useVideoCall } from '../../context/VideoCallContext'
+import { VideoCameraIcon } from '@heroicons/react/24/solid'
 import assets from '../assets/assets'
 import CreateGroup from './CreateGroup'
 
@@ -10,6 +12,7 @@ const Sidebar = () => {
     const {getUsers, users, selectedUser, setSelectedUser, unseenMessages, setUnseenMessages} = useContext(ChatContext)
     const {getGroups, groups, selectedGroup, setSelectedGroup, setShowCreateGroupModal} = useContext(GroupContext)
     const {logout, onlineUsers, authUser} = useContext(AuthContext)
+    const {startCall, isCallActive, isOutgoingCall} = useVideoCall();
 
     const [input, setInput] = useState("");
     const [activeTab, setActiveTab] = useState("users"); // "users" or "groups"
@@ -51,6 +54,11 @@ const Sidebar = () => {
     const handleGroupSelect = (group) => {
         setSelectedGroup(group);
         setSelectedUser(null); // Clear user selection
+    };
+
+    const handleVideoCall = (e, user) => {
+        e.stopPropagation(); // Prevent user selection when clicking video call
+        startCall(user._id, user);
     };
 
   return (
@@ -121,18 +129,36 @@ const Sidebar = () => {
             {activeTab === "users" ? (
                 // Users List
                 filteredUsers.map((user,index) => (
-                    <div onClick={() => handleUserSelect(user)} key={index} className={`relative flex items-center gap-2 p-2 pl-4 rounded cursor-pointer max-sm:text-sm ${selectedUser?._id === user._id && 'bg-[#282142]/10'}`}>
-                        <img src={user.profilePic || assets.avatar_icon} alt="" className='w-8.75 aspect-square rounded-full object-cover'/>
-                        <div className='flex flex-col leading-5'>
-                            <p>{user.fullName}</p>
-                            {
-                                (onlineUsers || []).includes(user._id)
-                                ? <span className='text-green-400 text-xs'>Online</span>
-                                : <span className='text-neutral-400 text-xs'>Offline</span>
-                            }
+                    <div key={index} className={`relative group flex items-center gap-2 p-2 pl-4 rounded cursor-pointer max-sm:text-sm ${selectedUser?._id === user._id && 'bg-[#282142]/10'}`}>
+                        <div onClick={() => handleUserSelect(user)} className="flex items-center gap-2 flex-1">
+                            <img src={user.profilePic || assets.avatar_icon} alt="" className='w-8.75 aspect-square rounded-full object-cover'/>
+                            <div className='flex flex-col leading-5'>
+                                <p>{user.fullName}</p>
+                                {
+                                    (onlineUsers || []).includes(user._id)
+                                    ? <span className='text-green-400 text-xs'>Online</span>
+                                    : <span className='text-neutral-400 text-xs'>Offline</span>
+                                }
+                            </div>
                         </div>
-                        {unseenMessages[user._id] > 0 && <p className='absolute top-4 right-4 text-xs h-5 w-5
-                        flex justify-center items-center rounded-full bg-violet-500/50'>{unseenMessages[user._id]}</p>}
+                        
+                        {/* Video Call Button - Only show for online users */}
+                        {(onlineUsers || []).includes(user._id) && !isCallActive && !isOutgoingCall && (
+                            <button
+                                onClick={(e) => handleVideoCall(e, user)}
+                                className="opacity-0 group-hover:opacity-100 p-2 rounded-full bg-violet-500/20 hover:bg-violet-500/40 transition-all duration-200"
+                                title="Start Video Call"
+                            >
+                                <VideoCameraIcon className="w-4 h-4 text-violet-400" />
+                            </button>
+                        )}
+                        
+                        {/* Unseen Messages Badge */}
+                        {unseenMessages[user._id] > 0 && 
+                            <p className='absolute top-4 right-4 text-xs h-5 w-5 flex justify-center items-center rounded-full bg-violet-500/50'>
+                                {unseenMessages[user._id]}
+                            </p>
+                        }
                     </div>
                 ))
             ) : (

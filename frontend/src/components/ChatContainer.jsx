@@ -6,7 +6,7 @@ import { GroupContext } from '../../context/GroupContext';
 import { AuthContext } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 
-const ChatContainer = () => {
+const ChatContainer = ({ showRightSidebar, setShowRightSidebar }) => {
 
   const {messages, selectedUser, setSelectedUser, sendMessage, getMessages} = useContext(ChatContext)
   const {groupMessages, selectedGroup, setSelectedGroup, sendGroupMessage, getGroupMessages} = useContext(GroupContext)
@@ -15,6 +15,7 @@ const ChatContainer = () => {
   const scrollEnd = useRef();
 
   const [input, setInput] = useState("")
+  const [isTyping, setIsTyping] = useState(false);
 
   // Determine current chat type and data
   const isGroupChat = !!selectedGroup;
@@ -25,12 +26,19 @@ const ChatContainer = () => {
     e.preventDefault();
     if(input.trim() === "") return;
     
-    if (isGroupChat) {
-      await sendGroupMessage({text: input.trim()});
-    } else {
-      await sendMessage({text: input.trim()});
+    setIsTyping(true);
+    try {
+      if (isGroupChat) {
+        await sendGroupMessage({text: input.trim()});
+      } else {
+        await sendMessage({text: input.trim()});
+      }
+      setInput("");
+    } catch (error) {
+      toast.error("Failed to send message");
+    } finally {
+      setIsTyping(false);
     }
-    setInput("");
   }
 
   const handleSendImage = async(e) => {
@@ -42,12 +50,19 @@ const ChatContainer = () => {
 
     const reader = new FileReader();
     reader.onloadend = async() => {
-      if (isGroupChat) {
-        await sendGroupMessage({image: reader.result});
-      } else {
-        await sendMessage({image: reader.result});
+      setIsTyping(true);
+      try {
+        if (isGroupChat) {
+          await sendGroupMessage({image: reader.result});
+        } else {
+          await sendMessage({image: reader.result});
+        }
+        e.target.value = "";
+      } catch (error) {
+        toast.error("Failed to send image");
+      } finally {
+        setIsTyping(false);
       }
-      e.target.value = "";
     }
     reader.readAsDataURL(file);
   }
@@ -59,6 +74,10 @@ const ChatContainer = () => {
       setSelectedUser(null);
     }
   }
+
+  const toggleRightSidebar = () => {
+    setShowRightSidebar(!showRightSidebar);
+  };
 
   useEffect(() => {
     if(selectedUser){
@@ -111,9 +130,11 @@ const ChatContainer = () => {
                 </svg>
               </div>
             )}
-            <div className='flex-1'>
-              <p className='text-lg text-white font-medium'>{selectedGroup.groupName}</p>
-              <p className='text-xs text-gray-400'>{selectedGroup.members.length} members</p>
+            <div className='flex-1 cursor-pointer' onClick={toggleRightSidebar}>
+              <p className='text-lg text-white font-medium hover:text-violet-300 transition-colors'>
+                {selectedGroup.groupName}
+              </p>
+              <p className='text-xs text-gray-400'>{selectedGroup.members.length} members • Click to view details</p>
             </div>
           </>
         ) : (
@@ -126,7 +147,12 @@ const ChatContainer = () => {
           </>
         )}
         <img onClick={handleBackClick} src={assets.arrow_icon} alt="" className='md:hidden max-w-7 cursor-pointer'/>
-        <img src={assets.help_icon} alt="" className='max-md:hidden max-w-5'/>
+        <img 
+          onClick={toggleRightSidebar} 
+          src={assets.help_icon} 
+          alt="" 
+          className='max-md:hidden max-w-5 cursor-pointer hover:opacity-70 transition-opacity'
+        />
       </div>
 
       {/* Messages Container */}
@@ -184,13 +210,23 @@ const ChatContainer = () => {
             type="text" 
             placeholder={isGroupChat ? `Message ${selectedGroup.groupName}` : 'Send a message'} 
             className='flex-1 text-sm p-3 border-none outline-none text-white placeholder-gray-400 bg-transparent'
+            disabled={isTyping}
           />
           <input onChange={handleSendImage} type="file" id='image' accept='image/png, image/jpeg' hidden />
           <label htmlFor="image">
-            <img src={assets.gallery_icon} alt="" className='w-5 mr-2 cursor-pointer' />
+            <img src={assets.gallery_icon} alt="" className='w-5 mr-2 cursor-pointer hover:opacity-70' />
           </label>
         </div>
-        <img onClick={handleSendMessage} src={assets.send_button} alt="" className='w-7 cursor-pointer'/>
+        <button 
+          onClick={handleSendMessage}
+          disabled={isTyping || input.trim() === ""}
+          className='hover:scale-105 transition-transform disabled:opacity-50 disabled:cursor-not-allowed'
+        >
+          <img src={assets.send_button} alt="" className='w-7 cursor-pointer'/>
+        </button>
+        {isTyping && (
+          <div className='text-xs text-gray-400'>Sending...</div>
+        )}
       </div>
     </div>
   ):(

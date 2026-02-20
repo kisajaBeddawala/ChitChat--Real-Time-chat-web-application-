@@ -12,7 +12,7 @@ export const GroupProvider = ({children}) => {
     const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
     const [users, setUsers] = useState([]);
 
-    const {socket, user} = useContext(AuthContext); 
+    const {socket} = useContext(AuthContext); 
 
     // Get all groups for the current user
     const getGroups = useCallback(async () => {
@@ -74,11 +74,10 @@ export const GroupProvider = ({children}) => {
     const sendGroupMessage = useCallback(async (messageData) => {
         try{
             const {data} = await axios.post(`api/messages/send/group/${selectedGroup._id}`, messageData);
-            if(data.success){
-                setGroupMessages((prev) => [...prev, data.message]);
-            }else{
+            if(!data.success){
                 toast.error(data.message);
             }
+            // Don't manually add message here - let socket handle it to prevent duplicates
         }catch(error){
             toast.error(error.response?.data?.message || error.message);
         }
